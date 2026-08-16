@@ -10,6 +10,13 @@
       content="ブラウザの回線をひたすら使い続ける、シンプルな帯域消費メーター。"
     />
     <title>Bandwidth Burner — 回線をただ燃やす</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"
+        }
+      }
+    </script>
     <style>
       :root {
         color-scheme: dark;
@@ -178,7 +185,7 @@
 
       .dashboard {
         display: grid;
-        grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.8fr);
+        grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.72fr);
         overflow: hidden;
         background: var(--panel);
         border: 1px solid var(--line);
@@ -193,7 +200,7 @@
       }
 
       .meter-card {
-        min-height: 390px;
+        min-height: 590px;
         border-right: 1px solid var(--line);
       }
 
@@ -237,26 +244,171 @@
         font-size: 13px;
       }
 
+      .visual-stage {
+        position: relative;
+        height: 310px;
+        margin: 26px 0 30px;
+        overflow: hidden;
+        isolation: isolate;
+        background:
+          radial-gradient(circle at 50% 48%, rgba(92, 242, 214, 0.12), transparent 34%),
+          linear-gradient(180deg, rgba(5, 8, 14, 0.42), rgba(5, 8, 14, 0.82));
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 13px;
+      }
+
+      .visual-stage::before,
+      .visual-stage::after {
+        position: absolute;
+        z-index: 2;
+        pointer-events: none;
+        content: "";
+      }
+
+      .visual-stage::before {
+        inset: 0;
+        opacity: 0.2;
+        background-image:
+          linear-gradient(rgba(92, 242, 214, 0.13) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(92, 242, 214, 0.13) 1px, transparent 1px);
+        background-size: 38px 38px;
+        mask-image: radial-gradient(circle at center, transparent 12%, black 92%);
+      }
+
+      .visual-stage::after {
+        inset: 0;
+        background:
+          linear-gradient(90deg, rgba(5, 8, 14, 0.8), transparent 18%, transparent 82%, rgba(5, 8, 14, 0.8)),
+          linear-gradient(0deg, rgba(5, 8, 14, 0.92), transparent 24%, transparent 82%, rgba(5, 8, 14, 0.45));
+      }
+
+      .three-mount,
+      .three-mount canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .three-mount {
+        z-index: 1;
+        cursor: crosshair;
+      }
+
+      .three-mount canvas {
+        display: block;
+      }
+
+      .visual-hud {
+        position: absolute;
+        top: 14px;
+        right: 15px;
+        left: 15px;
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        pointer-events: none;
+        color: rgba(213, 222, 233, 0.62);
+        font-size: 9px;
+        font-weight: 850;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .visual-state {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .visual-state-dot {
+        width: 5px;
+        height: 5px;
+        background: #647081;
+        border-radius: 50%;
+      }
+
+      .running .visual-state-dot {
+        background: var(--cyan);
+        box-shadow: 0 0 10px var(--cyan);
+      }
+
+      .visual-crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        z-index: 3;
+        width: 172px;
+        height: 172px;
+        border: 1px solid rgba(92, 242, 214, 0.1);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+
+      .visual-crosshair::before,
+      .visual-crosshair::after {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        content: "";
+        background: rgba(92, 242, 214, 0.14);
+        transform: translate(-50%, -50%);
+      }
+
+      .visual-crosshair::before {
+        width: 210px;
+        height: 1px;
+      }
+
+      .visual-crosshair::after {
+        width: 1px;
+        height: 210px;
+      }
+
+      .webgl-fallback {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        display: grid;
+        place-items: center;
+        color: rgba(92, 242, 214, 0.35);
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: 0.18em;
+      }
+
+      .visual-stage.is-ready .webgl-fallback {
+        display: none;
+      }
+
       .bars {
+        position: absolute;
+        right: 14px;
+        bottom: 13px;
+        left: 14px;
+        z-index: 5;
         display: flex;
         align-items: end;
-        gap: 4px;
-        height: 118px;
-        margin: 36px 0 32px;
+        gap: 3px;
+        height: 34px;
+        pointer-events: none;
       }
 
       .bar {
         flex: 1;
         min-width: 2px;
         height: 12%;
-        background: rgba(92, 242, 214, 0.18);
+        background: rgba(92, 242, 214, 0.12);
         border-radius: 2px 2px 0 0;
         transition: height 180ms ease, background 180ms ease;
       }
 
       .bar.live {
-        background: var(--cyan);
-        box-shadow: 0 0 10px rgba(92, 242, 214, 0.42);
+        background: rgba(92, 242, 214, 0.78);
+        box-shadow: 0 0 8px rgba(92, 242, 214, 0.34);
       }
 
       .metrics {
@@ -453,6 +605,10 @@
           border-bottom: 1px solid var(--line);
         }
 
+        .visual-stage {
+          height: 280px;
+        }
+
         .control-card {
           gap: 26px;
         }
@@ -495,7 +651,24 @@
           <div class="eyebrow">live throughput</div>
           <div class="speed-line"><span class="speed" id="speed">0.0</span><span class="unit">Mbps</span></div>
           <div class="subspeed" id="subspeed">待機中 — 測定データはまだありません</div>
-          <div class="bars" id="bars" aria-hidden="true"></div>
+          <div
+            class="visual-stage"
+            id="visualStage"
+            role="img"
+            aria-label="通信速度に応じて動きが変化する3Dデータストリーム"
+          >
+            <div class="three-mount" id="threeMount" aria-hidden="true"></div>
+            <div class="visual-crosshair" aria-hidden="true"></div>
+            <div class="visual-hud" aria-hidden="true">
+              <div class="visual-state">
+                <span class="visual-state-dot"></span>
+                <span id="visualStatus">reactor standby</span>
+              </div>
+              <span id="visualStreams">08 active lanes</span>
+            </div>
+            <div class="webgl-fallback" aria-hidden="true">initializing packet field</div>
+            <div class="bars" id="bars" aria-hidden="true"></div>
+          </div>
 
           <div class="metrics">
             <div>
@@ -551,6 +724,7 @@
       </footer>
     </main>
 
+    <script type="module" src="./visualizer.js"></script>
     <script>
       const DOWNLOAD_URL = "https://speed.cloudflare.com/__down?bytes=10000000";
       const app = document.getElementById("app");
@@ -608,6 +782,19 @@
         statusTextEl.textContent = text;
       }
 
+      function broadcastMetrics(speed = lastSpeed) {
+        window.dispatchEvent(
+          new CustomEvent("bandwidth:metrics", {
+            detail: {
+              speed,
+              totalBytes,
+              running,
+              streams: Number(modeEl.value),
+            },
+          }),
+        );
+      }
+
       function updateBars(speed) {
         const intensity = Math.min(1, speed / 1000);
         bars.forEach((bar, index) => {
@@ -632,6 +819,7 @@
         elapsedEl.textContent = formatTime(elapsed);
         requestsEl.textContent = completedRequests.toLocaleString("en-US");
         updateBars(lastSpeed);
+        broadcastMetrics(lastSpeed);
         lastBytes = totalBytes;
         lastTick = now;
         updateFrame = requestAnimationFrame(updateStats);
@@ -682,6 +870,7 @@
         stopButton.disabled = false;
         modeEl.disabled = true;
         const concurrency = Number(modeEl.value);
+        broadcastMetrics(0);
         for (let index = 0; index < concurrency; index += 1) {
           workers.push(downloadWorker(controller.signal, index));
         }
@@ -703,11 +892,13 @@
         stopButton.disabled = true;
         modeEl.disabled = false;
         subspeedEl.textContent = totalBytes ? "停止しました — 数字は残ります" : "待機中 — 測定データはまだありません";
+        broadcastMetrics(0);
       }
 
       startButton.addEventListener("click", () => start("infinite"));
       testButton.addEventListener("click", () => start("timed"));
       stopButton.addEventListener("click", stop);
+      modeEl.addEventListener("change", () => broadcastMetrics(0));
       window.addEventListener("pagehide", () => controller?.abort());
     </script>
   </body>
