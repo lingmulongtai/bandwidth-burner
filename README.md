@@ -12,6 +12,12 @@
 
 ## 開発
 
-依存関係はありません。`index.html` をブラウザで開くだけで動作します。
+依存関係はありません。ローカル確認時は、ダウンロード測定が動くようHTTPサーバー経由で開いてください。
+
+```powershell
+python -m http.server 4173
+```
+
+その後、`http://localhost:4173/` を開きます。
 
 GitHub Actions が `main` ブランチへの push を検知し、GitHub Pages へデプロイします。
